@@ -1,0 +1,7 @@
+{
+  "columns": [
+    {"name": "user_id", "type": "integer", "required": true, "nullable": false},
+    {"name": "email", "type": "string", "required": true, "nullable": false},
+    {"name": "age", "type": "integer", "required": false, "nullable": true}
+  ]
+}
