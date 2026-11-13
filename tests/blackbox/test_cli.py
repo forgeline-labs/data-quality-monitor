@@ -48,7 +48,7 @@ class CliTests(unittest.TestCase):
     def test_version_is_exact(self):
         result = run("--version")
         self.assertEqual(result.returncode, 0)
-        self.assertEqual(result.stdout, "data-quality-monitor 0.1.0\n")
+        self.assertEqual(result.stdout, "data-quality-monitor 0.1.1\n")
 
     def test_help_exits_zero(self):
         result = run("--help")
