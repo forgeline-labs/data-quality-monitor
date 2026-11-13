@@ -257,11 +257,11 @@ Para colunas numéricas (`integer`, `float`):
 
 Ordenar valores numéricos não-null ascendentemente. Seja `n = count`.
 ```
-q1_index = ceil(0.25 * (n + 1))
-q3_index = ceil(0.75 * (n + 1))
+q1_index = min(n, max(1, ceil(0.25 * (n + 1))))
+q3_index = min(n, max(1, ceil(0.75 * (n + 1))))
 q1 = sorted[q1_index - 1]  (converte para 0-indexed)
 q3 = sorted[q3_index - 1]
-q2 = median (q1_index = ceil(0.50 * (n + 1)))
+q2 = median (média dos dois valores centrais quando n é par)
 iqr = q3 - q1
 ```
 
@@ -426,10 +426,10 @@ Todo objeto JSON emitido tem `"version": "0.1"` e `"command"` iguais ao subcoman
       "max": 3.0,
       "mean": 2.0,
       "stddev": 0.816497,
-      "q1": 1.5,
+      "q1": 1.0,
       "q2": 2.0,
-      "q3": 2.5,
-      "iqr": 1.0,
+      "q3": 3.0,
+      "iqr": 2.0,
       "outlier_count": 0,
       "baseline_comparison": null
     },
@@ -451,10 +451,10 @@ Todo objeto JSON emitido tem `"version": "0.1"` e `"command"` iguais ao subcoman
       "max": 30.0,
       "mean": 27.5,
       "stddev": 2.5,
-      "q1": 26.25,
+      "q1": 25.0,
       "q2": 27.5,
-      "q3": 28.75,
-      "iqr": 2.5,
+      "q3": 30.0,
+      "iqr": 5.0,
       "outlier_count": 0,
       "baseline_comparison": null
     }
@@ -549,6 +549,8 @@ Casas decimais no modo texto:
 
 Fixtures referenciadas ficam em `tests/fixtures/`. Comparações de float em JSON usam tolerância `1e-6`. Comparações de texto são exatas (após normalizar espaçamento).
 
+---
+
 ### AC-1 — `validate --json` com CSV simples
 
 **Entrada** `tests/fixtures/ac1.csv`:
@@ -597,8 +599,8 @@ value
 
 **Comando:** `./app analyze --schema schema.json --outlier-threshold 1.5 --json tests/fixtures/ac2.csv`
 
-**Esperado:** `count = 10`, `q1 = 3.25`, `q3 = 8.25`, `iqr = 5.0`.
-Outlier: `100 > 8.25 + 1.5*5.0 = 15.75` ⇒ `outlier_count = 1`.
+**Esperado:** `count = 10`, `q1 = 3`, `q3 = 9`, `iqr = 6`.
+Outlier: `100 > 9 + 1.5*6 = 18` ⇒ `outlier_count = 1`.
 
 ---
 

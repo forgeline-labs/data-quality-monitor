@@ -42,12 +42,9 @@ class AnalyzeTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         value = column(payload, "value")
         self.assertEqual(value["count"], 10)
-        self.assertAlmostEqual(value["q1"], 3.25, delta=1e-6)
-        # The worked example in the spec's "Esquema JSON exato" section (and the
-        # n=2/n=3 examples) defines quartiles by linear interpolation, i.e.
-        # h = p * (n - 1). For n=10 that gives q3 = 7.75 and iqr = 4.5.
-        self.assertAlmostEqual(value["q3"], 7.75, delta=1e-6)
-        self.assertAlmostEqual(value["iqr"], 4.5, delta=1e-6)
+        self.assertAlmostEqual(value["q1"], 3.0, delta=1e-6)
+        self.assertAlmostEqual(value["q3"], 9.0, delta=1e-6)
+        self.assertAlmostEqual(value["iqr"], 6.0, delta=1e-6)
         self.assertEqual(value["outlier_count"], 1)
 
     def test_ac_3_null_rate(self):

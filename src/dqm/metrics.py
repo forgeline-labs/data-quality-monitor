@@ -28,19 +28,20 @@ def round_half_up(value, places=6):
 
 
 def percentile(sorted_values, fraction):
-    """Linear-interpolation percentile over already sorted values."""
+    """Nearest-rank percentile; clamp ranks to the observed range for small n.
+
+    The median remains the ordinary midpoint for an even-sized sample.
+    """
     count = len(sorted_values)
     if count == 0:
         return None
-    if count == 1:
-        return float(sorted_values[0])
-    position = (count - 1) * fraction
-    lower = math.floor(position)
-    upper = math.ceil(position)
-    if lower == upper:
-        return float(sorted_values[lower])
-    weight = position - lower
-    return float(sorted_values[lower] + weight * (sorted_values[upper] - sorted_values[lower]))
+    if fraction == 0.5:
+        middle = count // 2
+        if count % 2:
+            return float(sorted_values[middle])
+        return float((sorted_values[middle - 1] + sorted_values[middle]) / 2)
+    rank = max(1, min(count, math.ceil(fraction * (count + 1))))
+    return float(sorted_values[rank - 1])
 
 
 def _expected_number(entry, key):
