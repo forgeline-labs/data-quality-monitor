@@ -1,0 +1,7 @@
+{
+  "columns": {
+    "user_id": {"expected_null_rate": 0.0, "expected_outlier_count": 0},
+    "email": {"expected_null_rate": 10.0},
+    "age": {"expected_null_rate": 0.0}
+  }
+}
