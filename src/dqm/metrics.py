@@ -1,7 +1,9 @@
 """Quality metrics: null rates, distribution statistics and IQR outliers."""
 
 import math
+import statistics
 from decimal import ROUND_HALF_UP, Decimal, localcontext
+from fractions import Fraction
 
 from .schema import is_null, parse_typed
 
@@ -23,6 +25,8 @@ def round_half_up(value, places=6):
     """Round *value* half-up to *places* decimals (serialisation helper)."""
     if value is None:
         return None
+    if isinstance(value, int):
+        return value
     quant = Decimal(1).scaleb(-places)
     number = Decimal(str(value))
     with localcontext() as context:
@@ -41,10 +45,10 @@ def percentile(sorted_values, fraction):
     if fraction == 0.5:
         middle = count // 2
         if count % 2:
-            return float(sorted_values[middle])
-        return float((sorted_values[middle - 1] + sorted_values[middle]) / 2)
+            return sorted_values[middle]
+        return statistics.mean(sorted_values[middle - 1 : middle + 1])
     rank = max(1, min(count, math.ceil(fraction * (count + 1))))
-    return float(sorted_values[rank - 1])
+    return sorted_values[rank - 1]
 
 
 def _expected_number(entry, key):
@@ -107,8 +111,8 @@ def analyze_column(column, rows, lines_total, outlier_threshold, baseline_entry=
     for raw in non_null:
         ok, parsed = parse_typed(type_name, raw)
         if type_name in NUMERIC_TYPES and ok:
-            numeric_values.append(float(parsed))
-            canonical.append(float(parsed))
+            numeric_values.append(parsed)
+            canonical.append(parsed)
         else:
             canonical.append(raw)
 
@@ -130,17 +134,24 @@ def analyze_column(column, rows, lines_total, outlier_threshold, baseline_entry=
             if iqr == 0:
                 outlier_count = 0
             else:
-                lower = q1 - outlier_threshold * iqr
-                upper = q3 + outlier_threshold * iqr
+                # A float threshold must not round integer quartile boundaries.
+                margin = Fraction(outlier_threshold) * Fraction(iqr)
+                lower = Fraction(q1) - margin
+                upper = Fraction(q3) + margin
                 outlier_count = sum(1 for value in ordered if value < lower or value > upper)
-            mean = sum(ordered) / len(ordered)
-            variance = sum((value - mean) ** 2 for value in ordered) / len(ordered)
+            # statistics uses exact ratios internally, avoiding float conversion of
+            # integers and overflow in the sum or squared deviations.
+            mean = statistics.mean(ordered)
+            # Keep the variance and its square root in Decimal: the variance
+            # may exceed the float range even when the deviation fits in it.
+            variance = statistics.pvariance(Decimal(value) for value in ordered)
+            stddev = variance.sqrt()
             result.update(
                 {
                     "min": round_half_up(ordered[0]),
                     "max": round_half_up(ordered[-1]),
                     "mean": round_half_up(mean),
-                    "stddev": round_half_up(math.sqrt(variance)),
+                    "stddev": round_half_up(stddev),
                     "q1": round_half_up(q1),
                     "q2": round_half_up(q2),
                     "q3": round_half_up(q3),

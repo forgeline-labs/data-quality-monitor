@@ -31,7 +31,7 @@ runtime dependencies — the standard library is enough.
 git clone https://github.com/forgeline-labs/data-quality-monitor.git
 cd data-quality-monitor
 ./app --version
-# data-quality-monitor 0.1.0
+# data-quality-monitor 0.1.1
 ```
 
 The `app` entry point is a POSIX executable Python script; run `chmod +x app`
@@ -99,10 +99,10 @@ column: user_id
   max: 3.00
   mean: 2.00
   stddev: 0.82
-  q1: 1.50
+  q1: 1.00
   q2: 2.00
-  q3: 2.50
-  iqr: 1.00
+  q3: 3.00
+  iqr: 2.00
   outlier_count: 0
 
 column: email
@@ -120,10 +120,10 @@ column: age
   max: 30.00
   mean: 27.50
   stddev: 2.50
-  q1: 26.25
+  q1: 25.00
   q2: 27.50
-  q3: 28.75
-  iqr: 2.50
+  q3: 30.00
+  iqr: 5.00
   outlier_count: 0
 ```
 
@@ -135,7 +135,7 @@ JSON mode with a baseline:
 ```
 
 ```json
-{"version":"0.1","command":"analyze","input":{"source":"file","path":"tests/fixtures/ac1.csv","format":"csv","lines_total":3,"lines_valid":3,"lines_invalid":0},"outlier_threshold":1.5,"columns":[{"name":"user_id","type":"integer","count":3,"null_rate":0.0,"distinct_count":3,"min":1.0,"max":3.0,"mean":2.0,"stddev":0.816497,"q1":1.5,"q2":2.0,"q3":2.5,"iqr":1.0,"outlier_count":0,"baseline_comparison":{"expected_null_rate":0.0,"actual_null_rate":0.0,"diff_null_rate":0.0,"expected_outlier_count":0.0,"actual_outlier_count":0,"diff_outlier_count":0.0}},{"name":"email","type":"string","count":3,"null_rate":0.0,"distinct_count":3,"baseline_comparison":{"expected_null_rate":10.0,"actual_null_rate":0.0,"diff_null_rate":-10.0,"expected_outlier_count":null,"actual_outlier_count":null,"diff_outlier_count":null}},{"name":"age","type":"integer","count":2,"null_rate":33.333333,"distinct_count":2,"min":25.0,"max":30.0,"mean":27.5,"stddev":2.5,"q1":26.25,"q2":27.5,"q3":28.75,"iqr":2.5,"outlier_count":0,"baseline_comparison":{"expected_null_rate":0.0,"actual_null_rate":33.333333,"diff_null_rate":33.333333,"expected_outlier_count":null,"actual_outlier_count":0,"diff_outlier_count":null}}],"baseline_path":"tests/fixtures/ac1_baseline.json"}
+{"version":"0.1","command":"analyze","input":{"source":"file","path":"tests/fixtures/ac1.csv","format":"csv","lines_total":3,"lines_valid":3,"lines_invalid":0},"outlier_threshold":1.5,"columns":[{"name":"user_id","type":"integer","count":3,"null_rate":0.0,"distinct_count":3,"min":1.0,"max":3.0,"mean":2.0,"stddev":0.816497,"q1":1.0,"q2":2.0,"q3":3.0,"iqr":2.0,"outlier_count":0,"baseline_comparison":{"expected_null_rate":0.0,"actual_null_rate":0.0,"diff_null_rate":0.0,"expected_outlier_count":0.0,"actual_outlier_count":0,"diff_outlier_count":0.0}},{"name":"email","type":"string","count":3,"null_rate":0.0,"distinct_count":3,"baseline_comparison":{"expected_null_rate":10.0,"actual_null_rate":0.0,"diff_null_rate":-10.0,"expected_outlier_count":null,"actual_outlier_count":null,"diff_outlier_count":null}},{"name":"age","type":"integer","count":2,"null_rate":33.333333,"distinct_count":2,"min":25.0,"max":30.0,"mean":27.5,"stddev":2.5,"q1":25.0,"q2":27.5,"q3":30.0,"iqr":5.0,"outlier_count":0,"baseline_comparison":{"expected_null_rate":0.0,"actual_null_rate":33.333333,"diff_null_rate":33.333333,"expected_outlier_count":null,"actual_outlier_count":0,"diff_outlier_count":null}}],"baseline_path":"tests/fixtures/ac1_baseline.json"}
 ```
 
 ### `report`
@@ -172,8 +172,8 @@ show the comparison table):
 - **Distinct values:** 3
 - **Sample values:** `1`, `2`, `3`
 - **Min:** 1.00, **Max:** 3.00, **Mean:** 2.00
-- **Q1:** 1.50, **Median:** 2.00, **Q3:** 2.50
-- **IQR:** 1.00
+- **Q1:** 1.00, **Median:** 2.00, **Q3:** 3.00
+- **IQR:** 2.00
 - **Outliers detected:** 0
 
 ### email (string)
@@ -188,8 +188,8 @@ show the comparison table):
 - **Distinct values:** 2
 - **Sample values:** `30`, `25`
 - **Min:** 25.00, **Max:** 30.00, **Mean:** 27.50
-- **Q1:** 26.25, **Median:** 27.50, **Q3:** 28.75
-- **IQR:** 2.50
+- **Q1:** 25.00, **Median:** 27.50, **Q3:** 30.00
+- **IQR:** 5.00
 - **Outliers detected:** 0
 
 ## Baseline Comparison
@@ -210,7 +210,7 @@ show the comparison table):
 | `--json` | — | off | compact single-line JSON on stdout |
 | `--quiet` | — | off | suppress stderr warnings |
 | `--help` | — | — | print help, exit 0 |
-| `--version` | — | — | print `data-quality-monitor 0.1.0`, exit 0 |
+| `--version` | — | — | print `data-quality-monitor 0.1.1`, exit 0 |
 
 `validate` also accepts `--strict` (exit `3` when any row is invalid).
 `analyze` and `report` accept `--baseline` and `--outlier-threshold`.
@@ -373,15 +373,10 @@ style (they only invoke `./app` as a subprocess).
 The spec was treated as a set of testable examples rather than prose. That paid
 off in two places during the first round:
 
-- The metric section described quartiles as "nearest-rank" with a `ceil`
-  index formula, but the fully worked JSON example and the small-`n` examples
-  only agree with linear interpolation (`h = p * (n - 1)`). The first
-  implementation followed the prose formula and contradicted the example
-  (`q1 = 1` instead of `1.5` for `[1, 2, 3]`); the worked examples won, and
-  the code now interpolates. The same inconsistency appears in AC-2, where
-  `q3` is written as `8.25` although the spec's own interpolation rule gives
-  `7.75` for ten values `[1..9, 100]`; the implementation follows the rule
-  that all the other examples use.
+- The original quartile examples used linear interpolation despite the
+  nearest-rank formula in the contract. The runtime follows nearest-rank for
+  `q1` and `q3`, with an ordinary median for `q2`; the examples above now match
+  that behavior. For `[1, 2, 3]`, the quartiles are `1`, `2`, `3`.
 - An early CSV reader reused Python's `csv` module directly, which loses the
   information needed to trim only unquoted fields and made row numbering wrong
   for quoted embedded newlines. A small record splitter plus field parser

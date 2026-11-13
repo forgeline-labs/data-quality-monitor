@@ -14,6 +14,8 @@ def _num(value, places=2):
     if value is None:
         return "N/A"
     rounded = round_half_up(value, places)
+    if isinstance(rounded, int):
+        return str(rounded) + ("." + "0" * places if places else "")
     return f"{rounded:.{places}f}"
 
 
