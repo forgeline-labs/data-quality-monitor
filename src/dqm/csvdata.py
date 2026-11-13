@@ -60,6 +60,10 @@ def split_records(text):
     return records
 
 
+class CsvParseError(ValueError):
+    """A logical record has malformed quoting."""
+
+
 def parse_fields(record):
     """Parse one CSV record into a list of unquoted/trimmed field strings."""
     fields = []
@@ -69,6 +73,7 @@ def parse_fields(record):
         if index < length and record[index] == '"':
             index += 1
             buffer = []
+            closed = False
             while index < length:
                 if record[index] == '"':
                     if index + 1 < length and record[index + 1] == '"':
@@ -76,18 +81,26 @@ def parse_fields(record):
                         index += 2
                     else:
                         index += 1
+                        closed = True
                         break
                 else:
                     buffer.append(record[index])
                     index += 1
-            while index < length and record[index] != ",":
+            if not closed:
+                raise CsvParseError("unterminated quoted field")
+            while index < length and record[index].isspace():
                 index += 1
+            if index < length and record[index] != ",":
+                raise CsvParseError("unexpected text after closing quote")
             fields.append("".join(buffer))
         else:
             start = index
             while index < length and record[index] != ",":
                 index += 1
-            fields.append(record[start:index].strip())
+            raw = record[start:index]
+            if '"' in raw:
+                raise CsvParseError("quote inside an unquoted field")
+            fields.append(raw.strip())
 
         if index < length and record[index] == ",":
             index += 1
@@ -102,9 +115,10 @@ def parse_fields(record):
 class CsvData:
     """Parsed CSV: header names and data rows with their original line numbers."""
 
-    def __init__(self, header, rows):
+    def __init__(self, header, rows, errors=None):
         self.header = header
         self.rows = rows
+        self.errors = errors or {}
 
     @property
     def lines_total(self):
@@ -120,12 +134,24 @@ def parse_csv(text):
     if not records:
         return CsvData(None, [])
 
-    header = parse_fields(records[0][1])
-    header = [name.strip() for name in header]
+    errors = {}
     rows = []
+    try:
+        header = [name.strip() for name in parse_fields(records[0][1])]
+    except CsvParseError as exc:
+        header = None
+        line_number = records[0][0]
+        rows.append((line_number, None))
+        errors[line_number] = str(exc)
     for line_number, content in records[1:]:
-        rows.append((line_number, parse_fields(content)))
-    return CsvData(header, rows)
+        try:
+            if header is None:
+                raise CsvParseError("malformed header")
+            rows.append((line_number, parse_fields(content)))
+        except CsvParseError as exc:
+            rows.append((line_number, None))
+            errors[line_number] = str(exc)
+    return CsvData(header, rows, errors)
 
 
 def row_values(header, fields):

@@ -185,6 +185,18 @@ def _validate_rows(csv_data, schema):
     row_errors = []
     all_errors = []
     for line_number, fields in csv_data.rows:
+        if fields is None:
+            error = {
+                "row": line_number,
+                "column": None,
+                "value": None,
+                "expected_type": None,
+                "error": "malformed CSV: " + csv_data.errors[line_number],
+            }
+            rows.append({})
+            row_errors.append([error])
+            all_errors.append(error)
+            continue
         values = row_values(header, fields)
         rows.append(values)
         errors = []

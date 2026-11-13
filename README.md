@@ -272,12 +272,10 @@ All metrics are computed per schema column.
 - **Min / max:** smallest and largest numeric value.
 - **Mean:** arithmetic mean.
 - **Stddev:** population standard deviation (divides by `n`).
-- **Quartiles:** `q1`, `q2` (median) and `q3`, computed by linear interpolation
-  over the sorted values: `h = p * (n - 1)`, then interpolate between
-  `sorted[floor(h)]` and `sorted[ceil(h)]`. For example, `[1, 2, 3]` gives
-  `q1 = 1.5`, `q2 = 2.0`, `q3 = 2.5`. The spec describes this section as
-  "nearest-rank" but every worked example in the spec follows this
-  interpolation rule, so that is what the implementation does.
+- **Quartiles:** `q1` and `q3` use nearest-rank over sorted values:
+  `rank = min(n, max(1, ceil(p * (n + 1))))`, then select `sorted[rank - 1]`.
+  `q2` is the median (average of the middle pair for even samples).
+  For `[1, 2, 3]`, `q1 = 1`, `q2 = 2`, `q3 = 3`.
 - **IQR:** `q3 - q1`.
 - **Outliers:** a value is an outlier when
   `value < q1 - k * iqr` or `value > q3 + k * iqr`, where `k` is

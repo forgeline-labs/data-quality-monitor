@@ -1,7 +1,7 @@
 """Quality metrics: null rates, distribution statistics and IQR outliers."""
 
 import math
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import ROUND_HALF_UP, Decimal, localcontext
 
 from .schema import is_null, parse_typed
 
@@ -24,7 +24,10 @@ def round_half_up(value, places=6):
     if value is None:
         return None
     quant = Decimal(1).scaleb(-places)
-    return float(Decimal(str(value)).quantize(quant, rounding=ROUND_HALF_UP))
+    number = Decimal(str(value))
+    with localcontext() as context:
+        context.prec = max(context.prec, number.adjusted() + places + 2)
+        return float(number.quantize(quant, rounding=ROUND_HALF_UP))
 
 
 def percentile(sorted_values, fraction):
